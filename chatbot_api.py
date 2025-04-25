@@ -64,8 +64,19 @@ def chatbot_response(user_input):
     else:
         return "I'm not sure how to respond to that."
 
+@app.get("/")
+async def root():
+    return {"message": "Chatbot API is running!"}
+
 # Endpoint chính
 @app.post("/chat")
 async def chat(input: MessageInput):
     reply = chatbot_response(input.message)
     return {"response": reply}
+if __name__ == "__main__":
+    import os
+    import uvicorn
+
+    port = int(os.environ.get("PORT", 5000))  # Render cấp PORT, local thì dùng 5000
+    uvicorn.run("chatbot_api:app", host="0.0.0.0", port=port)
+

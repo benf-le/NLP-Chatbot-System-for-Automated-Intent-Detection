@@ -15,4 +15,4 @@ RUN pip install -r requirements.txt
 EXPOSE 5000
 
 # Lệnh để chạy ứng dụng khi container khởi động
-CMD ["uvicorn", "chatbot_api:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
+CMD ["python", "chatbot_api.py"]
