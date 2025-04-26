@@ -83,9 +83,10 @@ async def root():
 # Endpoint chính
 @app.post("/chat")
 async def chat(request: ChatRequest):
-    user_input = request.message.content  # <-- lấy nội dung tin nhắn từ Chatwoot gửi lên
+    data = await request.json()  # lấy thẳng body JSON gốc
 
-    # Gọi hàm dự đoán và trả lời
+    user_input = data["message"]["content"]  # đọc vào đúng field Chatwoot gửi
+
     response_text = chatbot_response(user_input)
 
     return {
