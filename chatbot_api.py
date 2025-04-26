@@ -15,6 +15,18 @@ from cleandata import *
 # Cấu hình FastAPI
 app = FastAPI()
 
+# Định nghĩa kiểu dữ liệu cho request body
+class MessageData(BaseModel):
+    content: str
+    reply_to: str = None
+    timestamp: str
+    referer_url: str
+
+class ChatRequest(BaseModel):
+    message: MessageData
+
+
+
 # Load các thành phần đã lưu từ mô hình đã huấn luyện
 model = load_model('model/bilstm_model.h5')  # mô hình CNN
 
@@ -70,9 +82,15 @@ async def root():
 
 # Endpoint chính
 @app.post("/chat")
-async def chat(input: MessageInput):
-    reply = chatbot_response(input.message)
-    return {"response": reply}
+async def chat(request: ChatRequest):
+    user_input = request.message.content  # <-- lấy nội dung tin nhắn từ Chatwoot gửi lên
+
+    # Gọi hàm dự đoán và trả lời
+    response_text = chatbot_response(user_input)
+
+    return {
+        "content": response_text
+    }
 if __name__ == "__main__":
     import os
     import uvicorn
