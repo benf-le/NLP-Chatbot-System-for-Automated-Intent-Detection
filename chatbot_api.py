@@ -25,6 +25,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+
 app = FastAPI()
 
 # Tải model và dữ liệu
@@ -42,6 +43,7 @@ try:
 
     # Thiết lập NLTK
     nltk.download('punkt')
+    nltk.download('punkt_tab')
     nltk.download('wordnet')
     nltk.download('stopwords')
     stop_words = set(stopwords.words('english'))
