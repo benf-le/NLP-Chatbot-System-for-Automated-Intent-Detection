@@ -189,14 +189,14 @@ class ChatwootService:
             # Lưu context của cuộc hội thoại
             self.update_conversation_context(conversation_id, message_content, intent)
 
-            # Kiểm tra xem có cần chuyển giao cho agent không
-            if self.should_handover_to_agent(intent, confidence, conversation_id):
-                # Gửi thông báo chuyển giao
-                self.send_message(account_id, conversation_id,
-                                  "I'll connect you with a customer service representative right away.")
-                # Chuyển cuộc hội thoại cho agent
-                self.assign_conversation(account_id, conversation_id)
-                return {"status": "handover", "reason": f"Low confidence ({confidence}) or handover intent"}
+            # # Kiểm tra xem có cần chuyển giao cho agent không
+            # if self.should_handover_to_agent(intent, confidence, conversation_id):
+            #     # Gửi thông báo chuyển giao
+            #     self.send_message(account_id, conversation_id,
+            #                       "I'll connect you with a customer service representative right away.")
+            #     # Chuyển cuộc hội thoại cho agent
+            #     self.assign_conversation(account_id, conversation_id)
+            #     return {"status": "handover", "reason": f"Low confidence ({confidence}) or handover intent"}
 
             # Gửi câu trả lời
             self.send_message(account_id, conversation_id, response)
