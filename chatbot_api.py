@@ -54,9 +54,14 @@ except Exception as e:
     logger.error(f"Lỗi khi tải model: {str(e)}")
     raise
 
-# Cấu hình Chatwoot
-CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL', 'https://app.chatwoot.com')
-CHATWOOT_API_KEY = os.environ.get('CHATWOOT_API_KEY', 'VcGFapqEX2bMdqHXhkFqTA1J')
+# Cấu hình Chatwoot - wweb Chatwoot
+# CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL', 'https://app.chatwoot.com')
+# CHATWOOT_API_KEY = os.environ.get('CHATWOOT_API_KEY', 'VcGFapqEX2bMdqHXhkFqTA1J')
+# BOT_NAME = os.environ.get('BOT_NAME', 'Pet Shop Assistant')
+
+# Cấu hình Chatwoot - web tự build
+CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL', 'http://34.46.179.242:3000/')
+CHATWOOT_API_KEY = os.environ.get('CHATWOOT_API_KEY', 'U3uX6spJGaJe5g5CCBCATw6R')
 BOT_NAME = os.environ.get('BOT_NAME', 'Pet Shop Assistant')
 
 # Mẫu regex cho emoji
