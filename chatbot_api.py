@@ -58,7 +58,7 @@ except Exception as e:
 
 # Cấu hình Chatwoot - wweb Chatwoot
 CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL', 'https://app.chatwoot.com')
-CHATWOOT_API_KEY = os.environ.get('CHATWOOT_API_KEY', '115845')
+CHATWOOT_API_KEY = os.environ.get('CHATWOOT_API_KEY', '1MStthEsbxeHZjtBHm12gQN6')
 BOT_NAME = os.environ.get('BOT_NAME', 'Pet Shop Assistant')
 
 # Cấu hình Chatwoot - web tự build
