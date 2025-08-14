@@ -57,9 +57,9 @@ except Exception as e:
     raise
 
 # Cấu hình Chatwoot - wweb Chatwoot
-CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL', 'https://app.chatwoot.com')
-CHATWOOT_API_KEY = os.environ.get('CHATWOOT_API_KEY', '1MStthEsbxeHZjtBHm12gQN6')
-BOT_NAME = os.environ.get('BOT_NAME', 'Pet Shop Assistant')
+# CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL', 'https://app.chatwoot.com')
+# CHATWOOT_API_KEY = os.environ.get('CHATWOOT_API_KEY', '1MStthEsbxeHZjtBHm12gQN6')
+# BOT_NAME = os.environ.get('BOT_NAME', 'Pet Shop Assistant')
 
 # Cấu hình Chatwoot - web tự build
 # CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL', 'http://34.46.179.242:3000/')
@@ -67,9 +67,9 @@ BOT_NAME = os.environ.get('BOT_NAME', 'Pet Shop Assistant')
 # BOT_NAME = os.environ.get('BOT_NAME', 'Pet Shop Assistant')
 
 # # Cấu hình Chatwoot - web verifySupp
-# CHATWOOT_BASE_URL = "http://34.55.138.114:3000/"
-# CHATWOOT_API_KEY = "2"
-# BOT_NAME = os.environ.get('BOT_NAME', 'verifySupp Shop Assistant')
+CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL',"http://34.55.138.114:3000/")
+CHATWOOT_API_KEY = os.environ.get('CHATWOOT_BASE_URL',"jiViGpFB62PjfUNNbfPpcMwD")
+BOT_NAME = os.environ.get('BOT_NAME', 'verifySupp Shop Assistant')
 # Mẫu regex cho emoji
 emoji_pattern = re.compile(
     "["
