@@ -72,6 +72,7 @@ except Exception as e:
 CHATWOOT_BASE_URL = os.environ.get('CHATWOOT_BASE_URL',"http://34.55.138.114:3000/")
 CHATWOOT_API_KEY = os.environ.get('CHATWOOT_BASE_URL',"jiViGpFB62PjfUNNbfPpcMwD")
 BOT_NAME = os.environ.get('BOT_NAME', 'verifySupp Shop Assistant')
+
 # Mẫu regex cho emoji
 emoji_pattern = re.compile(
     "["
@@ -91,11 +92,6 @@ emoji_pattern = re.compile(
 
 
 # Hàm xử lý văn bản
-def remove_number(text):
-    """Xóa số từ văn bản"""
-    return re.sub(r'\d+', '', text)
-
-
 def remove_punctuation(text):
     """Xóa dấu câu từ văn bản"""
     return re.sub(r'[^\w\s]', ' ', text)
@@ -104,11 +100,6 @@ def remove_punctuation(text):
 def remove_whitespace(text):
     """Xóa khoảng trắng thừa"""
     return re.sub(r'\s+', ' ', text).strip()
-
-
-def remove_similarletter(text):
-    """Xóa các chữ cái tương tự lặp lại"""
-    return re.sub(r'([a-z])\1{2,}', r'\1', text)
 
 
 class MessageInput(BaseModel):
@@ -147,10 +138,8 @@ class ChatwootService:
         """Hàm dự đoán phản hồi từ mô hình"""
         try:
             # Tiền xử lý văn bản đầu vào
-            user_input = remove_number(user_input)
             user_input = remove_punctuation(user_input)
             user_input = remove_whitespace(user_input)
-            user_input = remove_similarletter(user_input)
             user_input = re.sub(emoji_pattern, " ", user_input)
 
             tokens = nltk.word_tokenize(user_input.lower())
