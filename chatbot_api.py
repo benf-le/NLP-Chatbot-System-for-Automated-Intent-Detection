@@ -17,7 +17,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
-from sentence_transformers import SentenceTransformer
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Cấu hình logging
@@ -125,8 +125,6 @@ class ChatwootService:
         }
         self.conversation_cache = {}  # Cache để lưu context của các cuộc hội thoại
 
-        # --- Load Sentence-BERT ---
-        self.sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
 
         # --- Chuẩn bị mapping intent -> (instructions, responses) ---
         self.intent_to_qa = {}
@@ -137,12 +135,13 @@ class ChatwootService:
             self.intent_to_qa[intent]["response"].append(ans)
 
         # --- Encode toàn bộ câu hỏi trong mỗi intent ---
-        self.intent_embeddings = {}
+        self.vectorizers = {}
+        self.tfidf_matrices = {}
         for intent, qa in self.intent_to_qa.items():
-            embeddings = self.sbert_model.encode(
-                qa["instruction"], convert_to_numpy=True, show_progress_bar=True
-            )
-            self.intent_embeddings[intent] = embeddings
+            vec = TfidfVectorizer()
+            tfidf = vec.fit_transform(qa["instruction"])
+            self.vectorizers[intent] = vec
+            self.tfidf_matrices[intent] = tfidf
 
     def predict_response(self, user_input):
         """Hàm dự đoán phản hồi từ mô hình"""
@@ -165,11 +164,12 @@ class ChatwootService:
             intent = label_encoder.inverse_transform([np.argmax(pred)])[0]
             confidence = np.max(pred)
 
-            # --- Retrieval bằng Sentence-BERT ---
-            if intent in self.intent_to_qa:
-                user_emb = self.sbert_model.encode([user_input], convert_to_numpy=True)
-                sims = cosine_similarity(user_emb, self.intent_embeddings[intent])
-                idx = np.argmax(sims)
+            responses = df[df['intent'] == intent]['response'].tolist()
+            if responses:
+                # ---- TF-IDF retrieval trong intent ----
+                vec = self.vectorizers[intent].transform([cleaned_text])
+                sims = cosine_similarity(vec, self.tfidf_matrices[intent])
+                idx = sims.argmax()
                 response = self.intent_to_qa[intent]["response"][idx]
             else:
                 response = "I'm not sure how to respond to that."
