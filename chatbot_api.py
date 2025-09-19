@@ -177,7 +177,7 @@ class ChatwootService:
             return {
                 "intent": intent,
                 "response": response,
-                "confidence": confidence
+                "confidence": float(confidence)
             }
         except Exception as e:
             logger.error(f"Lỗi khi dự đoán phản hồi: {str(e)}")
