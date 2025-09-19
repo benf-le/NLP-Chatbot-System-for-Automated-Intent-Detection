@@ -17,6 +17,8 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 
 # Cấu hình logging
 logging.basicConfig(
@@ -123,6 +125,25 @@ class ChatwootService:
         }
         self.conversation_cache = {}  # Cache để lưu context của các cuộc hội thoại
 
+        # --- Load Sentence-BERT ---
+        self.sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+        # --- Chuẩn bị mapping intent -> (instructions, responses) ---
+        self.intent_to_qa = {}
+        for q, intent, ans in zip(df['instruction'], df['intent'], df['response']):
+            if intent not in self.intent_to_qa:
+                self.intent_to_qa[intent] = {"instruction": [], "response": []}
+            self.intent_to_qa[intent]["instruction"].append(q)
+            self.intent_to_qa[intent]["response"].append(ans)
+
+        # --- Encode toàn bộ câu hỏi trong mỗi intent ---
+        self.intent_embeddings = {}
+        for intent, qa in self.intent_to_qa.items():
+            embeddings = self.sbert_model.encode(
+                qa["instruction"], convert_to_numpy=True, show_progress_bar=True
+            )
+            self.intent_embeddings[intent] = embeddings
+
     def predict_response(self, user_input):
         """Hàm dự đoán phản hồi từ mô hình"""
         try:
@@ -144,20 +165,20 @@ class ChatwootService:
             intent = label_encoder.inverse_transform([np.argmax(pred)])[0]
             confidence = np.max(pred)
 
-            responses = df[df['intent'] == intent]['response'].tolist()
-            if responses:
-                response = random.choice(responses)
-                return {
-                    "intent": intent,
-                    "response": response,
-                    "confidence": float(confidence)
-                }
+            # --- Retrieval bằng Sentence-BERT ---
+            if intent in self.intent_to_qa:
+                user_emb = self.sbert_model.encode([user_input], convert_to_numpy=True)
+                sims = cosine_similarity(user_emb, self.intent_embeddings[intent])
+                idx = np.argmax(sims)
+                response = self.intent_to_qa[intent]["response"][idx]
             else:
-                return {
-                    "intent": "unknown",
-                    "response": "I'm not sure how to respond to that.",
-                    "confidence": float(confidence)
-                }
+                response = "I'm not sure how to respond to that."
+
+            return {
+                "intent": intent,
+                "response": response,
+                "confidence": confidence
+            }
         except Exception as e:
             logger.error(f"Lỗi khi dự đoán phản hồi: {str(e)}")
             return {
