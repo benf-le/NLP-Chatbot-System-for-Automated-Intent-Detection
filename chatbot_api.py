@@ -34,7 +34,7 @@ app = FastAPI()
 try:
     # Tải mô hình và tokenizer
     # model = load_model('model/bilstm_model.h5')
-    model = load_model('model/ver5_cnn_model.keras')
+    model = load_model('model/cnn_model.keras')
 
     tokenizer = joblib.load('model/tokenizer.pkl')
     label_encoder = joblib.load('model/label_encoder.pkl')
