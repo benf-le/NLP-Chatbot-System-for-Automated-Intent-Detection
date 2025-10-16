@@ -1,4 +1,4 @@
-# ⚡ api_chatbot
+# ⚡ NLP Chatbot System for Automated Intent Detection
 
 <div align="center">
 
@@ -14,6 +14,13 @@
 ## 📖 Overview
 
 This project implements a RESTful API for a chatbot powered by a pre-trained language model.  It utilizes a cleaned dataset of customer support interactions (`Bitext_Sample_Customer_Support_Training_Dataset_27K_responses-v11.csv`) to improve the chatbot's responses.  The API is containerized using Docker for easy deployment. The project uses Jupyter Notebooks for model training and experimentation.
+
+The core of the project involved extensive experimentation and training using Jupyter Notebooks (specifically, in a Google Colab environment to leverage GPU/TPU resources).
+Data Preparation: The process started with meticulous cleaning of the customer support dataset, including: removing numbers and emojis, standardizing whitespace, tokenization, Lemmatization, and removing English stopwords.
+Data Augmentation: To ensure robust learning and balance across the 27 Intents in the dataset, a Synonym Replacement technique was applied to enrich the training data.
+Model Selection: Four Deep Learning architectures—CNN, LSTM, BiLSTM, and CNN+BiLSTM—were built and benchmarked for the Intent Detection task.
+Performance: The CNN model demonstrated superior performance and was selected for production, achieving a peak Accuracy of 99.46%on the independent test set, with 99% in Precision, Recall, and F1-score.
+Deployment Integration: The final optimized model and its tokenizer were saved as artifacts and integrated into the FastAPI service for real-time inference.
 
 ## ✨ Features
 
@@ -89,36 +96,13 @@ api_chatbot/
 
 ```
 
-## ⚙️ Configuration
+## 📚 API Reference 
 
-No explicit configuration files are detected, but environment variables might be used within the `chatbot_api.py` (needs investigation).
-
-
-## 🧪 Testing
-
-No dedicated test suite is found.  Testing should be added for production readiness.  (TODO: Add testing)
-
-
-## 🚀 Deployment
-
-The Dockerfile provides a simple deployment mechanism.  Deploy to any Docker-compatible environment.
-
-
-## 📚 API Reference (Partial)
-
-The API endpoints need further investigation within `chatbot_api.py`. (TODO:  Detailed API documentation from code analysis)
-
-
-## 🤝 Contributing
-
-Contributions are welcome!  Please open an issue or submit a pull request. (TODO:  Add detailed contribution guidelines)
-
-
-## 📄 License
-
-This project is under the (TODO: Specify License).
-
-
+| Endpoint | Method | Function |
+| :--- | :--- | :--- |
+| **/health** | **GET** | Service Status Check (Health Check). |
+| **/api/predict** | **POST** | Simple Intent Prediction (For testing/debugging purposes only). |
+| **/webhook** | **POST** | Receives Webhooks from Chatwoot (The main communication gateway). |
 ---
 
 <div align="center">
