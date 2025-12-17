@@ -5,6 +5,8 @@ LABEL authors="bang8"
 # Thiết lập thư mục làm việc
 WORKDIR /app
 
+# BẮT BUỘC: Ép buộc sử dụng Legacy Keras để tránh lỗi Keras 3
+ENV TF_USE_LEGACY_KERAS=1
 # Copy requirements.txt trước để tận dụng Docker layer caching
 # Chỉ rebuild dependencies khi requirements.txt thay đổi
 COPY requirements.txt /app/
