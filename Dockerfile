@@ -1,15 +1,23 @@
-# Bắt đầu với image Python 3.9
+# Bắt đầu với image Python 3.11
 FROM python:3.11-slim
 LABEL authors="bang8"
+
 # Thiết lập thư mục làm việc
 WORKDIR /app
 
-# Sao chép tất cả các file vào thư mục làm việc
-COPY . /app/
+# Copy requirements.txt trước để tận dụng Docker layer caching
+# Chỉ rebuild dependencies khi requirements.txt thay đổi
+COPY requirements.txt /app/
 
-# Cài đặt các dependencies
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Cài đặt dependencies (không dùng cache mount)
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Tải NLTK data trong build time (thay vì runtime)
+RUN python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab'); nltk.download('wordnet'); nltk.download('stopwords')"
+
+# Copy toàn bộ code (sau khi đã cài dependencies)
+COPY . /app/
 
 # Mở cổng 5000
 EXPOSE 5000
