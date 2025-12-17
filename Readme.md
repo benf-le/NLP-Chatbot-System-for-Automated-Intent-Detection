@@ -50,7 +50,7 @@ Deployment Integration: The final optimized model and its tokenizer were saved a
 
 ### Prerequisites
 
-- Python 3.x (version specified in `requirements.txt`)
+- Python 3.11
 - Docker
 
 ### Installation
