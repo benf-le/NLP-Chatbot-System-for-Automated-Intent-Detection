@@ -557,7 +557,7 @@ class ChatwootService:
 
             # Gửi JSON về Chatwoot (dạng string JSON)
             json_message = json.dumps(json_response, ensure_ascii=False, indent=2)
-            self.send_message(account_id, conversation_id, json_message)
+            # self.send_message(account_id, conversation_id, json_message)
 
             return {
                 "status": "success",
