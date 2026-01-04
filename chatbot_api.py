@@ -428,12 +428,17 @@ class ChatwootService:
             best_global_idx = indices_in_intent[best_sub_idx]
             similarity_score = float(sims[best_sub_idx])
 
-            # Chọn câu trả lời: Nếu score > 0.6 thì lấy câu khớp nhất, ngược lại lấy ngẫu nhiên trong intent
-            if similarity_score > 0.6:
+            if similarity_score >= 0.65:
+                # Trường hợp 1: Rất giống câu mẫu -> Trả về câu trả lời mẫu chính xác
+                best_global_idx = indices_in_intent[best_sub_idx]
                 response = knowledge_data['responses'][best_global_idx]
+            elif 0.4 <= similarity_score < 0.65:
+                # Trường hợp 2: Có vẻ giống nhưng không chắc chắn
+                # Thay vì lấy bừa, ta đưa ra câu trả lời mang tính định hướng
+                response = f"It seems you are asking about '{intent.replace('_', ' ')}'. Could you please be more specific so I can assist you better?"
             else:
-                response = np.random.choice(knowledge_data['responses'][indices_in_intent])
-
+                # Trường hợp 3: Quá khác biệt (Out of Distribution)
+                response = "I recognized your intent as related to our services, but I couldn't find a specific answer. Let me connect you with a human agent."
             # 5. Trích xuất thực thể (GliNER)
             entities = self.extract_entities_optimized(raw_text, intent)
 
