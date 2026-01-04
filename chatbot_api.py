@@ -3,14 +3,11 @@ import json
 import logging
 import requests
 import numpy as np
-import pandas as pd
-import random
 import re
 import nltk
 import joblib
 import threading
 import time
-from typing import Dict, Any, List
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from tensorflow.keras.models import load_model
@@ -20,7 +17,8 @@ from nltk.corpus import stopwords
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from fastapi import BackgroundTasks
-import asyncio
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
 from concurrent.futures import ThreadPoolExecutor
 
 # --- NEW: Import GLiNER ---
@@ -306,30 +304,23 @@ INTENT_TO_GLINER_LABELS = {
 # 2. LOAD MODEL VÀ DỮ LIỆU
 # ==============================================================================
 try:
-    # Tải mô hình và tokenizer
-    # model = load_model('model/bilstm_model.h5')
-    model = load_model('model/cnn_model.keras')
+    # Model chính (CNN dự đoán Intent từ Vector 384d)
+    cnn_model = load_model('model/cnn_bilstm_model.keras')
 
-    tokenizer = joblib.load('model/tokenizer.pkl')
+    # Model nhúng (Biến text thành Vector 384d)
+    sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+    # Kho tri thức đã lưu (embeddings, responses, intents)
+    vectors_db = np.load('model/knowledge_embeddings.npy')
+    knowledge_data = joblib.load('model/knowledge_data.pkl')
     label_encoder = joblib.load('model/label_encoder.pkl')
 
-    # Tải dataset response
-    df = pd.read_csv('Bitext_Sample_Customer_Support_Training_Dataset_27K_responses-v11.csv')
+    # GliNER (Trích xuất thực thể)
+    gliner_model = GLiNER.from_pretrained("gliner-community/gliner_large-v2.5")
 
-    # Thông số padding
-    MAX_LEN = 100  # Thay bằng max_len đã dùng trong quá trình train
-
-    # Thiết lập NLTK
-    # nltk.download('punkt')
-    # nltk.download('punkt_tab')
-    # nltk.download('wordnet')
-    # nltk.download('stopwords')
-    stop_words = set(stopwords.words('english'))
-    lemmatizer = WordNetLemmatizer()
-
-    logger.info("Model CNN và dữ liệu đã được tải thành công")
+    logger.info("Hệ thống SBERT + CNN + GliNER đã sẵn sàng!")
 except Exception as e:
-    logger.error(f"Lỗi khi tải model NLP cơ bản: {str(e)}")
+    logger.error(f"Lỗi khởi tạo hệ thống: {str(e)}")
     raise
 
 # Cấu hình Chatwoot
@@ -340,15 +331,6 @@ BOT_NAME = os.environ.get('BOT_NAME', 'verifySupp Shop Assistant')
 # Mẫu regex cho emoji
 emoji_pattern = re.compile(
     r"[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF]+")  # (Rút gọn cho ngắn code)
-
-
-# Hàm xử lý văn bản
-def remove_punctuation(text):
-    return re.sub(r'[^\w\s]', ' ', text)
-
-
-def remove_whitespace(text):
-    return re.sub(r'\s+', ' ', text).strip()
 
 
 class MessageInput(BaseModel):
@@ -368,32 +350,6 @@ class ChatwootService:
         }
         self.conversation_cache = {}
 
-        # --- NEW: LOAD GLINER MODEL ---
-        try:
-            logger.info("Đang tải model GliNER (Entity Extraction)...")
-            # Dùng 'urchade/gliner_multi-v2.1' nếu data có cả tiếng Việt, hoặc 'gliner_large-v2.1' nếu full Anh
-            self.gliner_model = GLiNER.from_pretrained("gliner-community/gliner_large-v2.5")
-            logger.info("GliNER model tải thành công!")
-        except Exception as e:
-            logger.error(f"Lỗi tải GliNER: {str(e)}")
-            self.gliner_model = None
-
-        # --- Chuẩn bị mapping intent -> (instructions, responses) ---
-        self.intent_to_qa = {}
-        for q, intent, ans in zip(df['instruction'], df['intent'], df['response']):
-            if intent not in self.intent_to_qa:
-                self.intent_to_qa[intent] = {"instruction": [], "response": []}
-            self.intent_to_qa[intent]["instruction"].append(str(q))
-            self.intent_to_qa[intent]["response"].append(str(ans))
-
-        # --- Encode TF-IDF ---
-        self.vectorizers = {}
-        self.tfidf_matrices = {}
-        for intent, qa in self.intent_to_qa.items():
-            vec = TfidfVectorizer()
-            tfidf = vec.fit_transform(qa["instruction"])
-            self.vectorizers[intent] = vec
-            self.tfidf_matrices[intent] = tfidf
 
     # --- NEW: HÀM TRÍCH XUẤT ENTITY THÔNG MINH ---
     def extract_entities_optimized(self, user_text, predicted_intent):
@@ -452,63 +408,51 @@ class ChatwootService:
         return results
 
     def predict_response(self, user_input):
-        """Hàm dự đoán phản hồi từ mô hình (Đã tích hợp Entity Extraction)"""
+        """Hàm dự đoán phản hồi sử dụng CNN + SBERT Search"""
         try:
-            # 1. Giữ lại text gốc cho Entity Extraction
-            original_text = user_input
+            # 1. Tiền xử lý tối giản (Giữ nguyên cấu trúc câu cho SBERT)
+            raw_text = user_input.strip()
+            cleaned_text = raw_text.lower()
 
-            # 2. Tiền xử lý văn bản cho Intent Classification
-            user_input = remove_punctuation(user_input)
-            user_input = remove_whitespace(user_input)
-            user_input = re.sub(emoji_pattern, " ", user_input)
+            # 2. Vector hóa câu hỏi (SBERT)
+            user_vec = sbert_model.encode([cleaned_text], show_progress_bar=False)
 
-            tokens = nltk.word_tokenize(user_input.lower())
-            filtered_tokens = [lemmatizer.lemmatize(t) for t in tokens if t.isalpha() and t not in stop_words]
-            cleaned_text = ' '.join(filtered_tokens)
+            # 3. Dự đoán Intent (CNN)
+            pred = cnn_model.predict(user_vec, verbose=0)
+            intent_idx = np.argmax(pred)
+            intent = label_encoder.inverse_transform([intent_idx])[0]
+            confidence = float(np.max(pred))
 
-            # 3. Dự đoán Intent (CNN/LSTM)
-            seq = tokenizer.texts_to_sequences([cleaned_text])
-            padded_seq = pad_sequences(seq, maxlen=MAX_LEN, padding='post')
+            # 4. Search Vector (Chỉ search trong Intent đã đoán)
+            indices_in_intent = np.where(knowledge_data['intents'] == intent)[0]
+            sub_vectors = vectors_db[indices_in_intent]
 
-            pred = model.predict(padded_seq, verbose=0)  # verbose=0 để đỡ spam log
-            intent = label_encoder.inverse_transform([np.argmax(pred)])[0]
-            confidence = np.max(pred)
+            # Tính tương đồng Cosine
+            sims = cosine_similarity(user_vec, sub_vectors)[0]
+            best_sub_idx = np.argmax(sims)
+            best_global_idx = indices_in_intent[best_sub_idx]
+            similarity_score = float(sims[best_sub_idx])
 
-            # 4. Tìm câu trả lời (TF-IDF)
-            responses = df[df['intent'] == intent]['response'].tolist()
-            if responses:
-                if intent in self.vectorizers:
-                    vec = self.vectorizers[intent].transform([cleaned_text])
-                    sims = cosine_similarity(vec, self.tfidf_matrices[intent])
-                    idx = sims.argmax()
-                    response = self.intent_to_qa[intent]["response"][idx]
-                else:
-                    response = responses[0]  # Fallback
+            # Chọn câu trả lời: Nếu score > 0.6 thì lấy câu khớp nhất, ngược lại lấy ngẫu nhiên trong intent
+            if similarity_score > 0.6:
+                response = knowledge_data['responses'][best_global_idx]
             else:
-                response = "I'm not sure how to respond to that."
+                response = np.random.choice(knowledge_data['responses'][indices_in_intent])
 
-            # 5. --- NEW: TRÍCH XUẤT ENTITY ---
-            extracted_entities = self.extract_entities_optimized(original_text, intent)
-
-            # Log kết quả để debug
-            if extracted_entities:
-                logger.info(f"Intent: {intent} | Entities Found: {extracted_entities}")
+            # 5. Trích xuất thực thể (GliNER)
+            entities = self.extract_entities(raw_text, intent)
 
             return {
                 "intent": intent,
                 "response": response,
-                "confidence": float(confidence),
-                "entities": extracted_entities  # Trả về entity trong API response
+                "confidence": confidence,
+                "similarity_score": similarity_score,
+                "entities": entities
             }
 
         except Exception as e:
-            logger.error(f"Lỗi khi dự đoán phản hồi: {str(e)}")
-            return {
-                "intent": "error",
-                "response": "Sorry, there was an error processing your request.",
-                "confidence": 0.0,
-                "entities": []
-            }
+            logger.error(f"Lỗi Inference: {str(e)}")
+            return {"intent": "error", "response": "System error.", "confidence": 0, "entities": []}
 
     def handle_message(self, data):
         """Xử lý tin nhắn từ Chatwoot webhook"""
@@ -557,7 +501,7 @@ class ChatwootService:
 
             # Gửi JSON về Chatwoot (dạng string JSON)
             json_message = json.dumps(json_response, ensure_ascii=False, indent=2)
-            # self.send_message(account_id, conversation_id, json_message)
+            self.send_message(account_id, conversation_id, json_message)
 
             return {
                 "status": "success",
