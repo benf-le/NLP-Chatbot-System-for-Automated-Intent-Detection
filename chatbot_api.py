@@ -11,14 +11,9 @@ import time
 from fastapi import FastAPI, Request, HTTPException
 from pydantic import BaseModel
 from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from fastapi import BackgroundTasks
 from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
 from concurrent.futures import ThreadPoolExecutor
 
 # --- NEW: Import GLiNER ---
@@ -379,7 +374,7 @@ class ChatwootService:
         # ==============================
         # 2. GLiNER ENTITY EXTRACTION
         # ==============================
-        if not self.gliner_model:
+        if not gliner_model:
             return results
 
         label_schema = INTENT_TO_GLINER_LABELS.get(
@@ -388,7 +383,7 @@ class ChatwootService:
         )
 
         try:
-            gliner_entities = self.gliner_model.predict_entities(
+            gliner_entities = gliner_model.predict_entities(
                 cleaned_text,
                 labels=label_schema,  # <-- LABEL + DESCRIPTION
                 threshold=0.3,
@@ -440,7 +435,7 @@ class ChatwootService:
                 response = np.random.choice(knowledge_data['responses'][indices_in_intent])
 
             # 5. Trích xuất thực thể (GliNER)
-            entities = self.extract_entities(raw_text, intent)
+            entities = self.extract_entities_optimized(raw_text, intent)
 
             return {
                 "intent": intent,
