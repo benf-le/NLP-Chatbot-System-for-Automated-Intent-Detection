@@ -300,7 +300,7 @@ INTENT_TO_GLINER_LABELS = {
 # ==============================================================================
 try:
     # Model chính (CNN dự đoán Intent từ Vector 384d)
-    cnn_model = load_model('model/cnn_model.keras')
+    cnn_model = load_model('model/cnn_bilstm_model.keras')
 
     # Model nhúng (Biến text thành Vector 384d)
     sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
