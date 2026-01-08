@@ -485,6 +485,7 @@ class ChatwootService:
             intent = prediction.get('intent')
             confidence = prediction.get('confidence')
             response = prediction.get('response')
+            similarity_score = prediction.get('similarity_score')
             entities = prediction.get('entities')  # Lấy entity
 
             # Lưu context
@@ -496,8 +497,11 @@ class ChatwootService:
                 "response": response,
                 "confidence": float(confidence),
                 "entities": entities,
+                "similarity_score": similarity_score,
                 "original_message": message_content
             }
+
+            print(json_response)
 
             # Gửi JSON về Chatwoot (dạng string JSON)
             json_message = json.dumps(json_response, ensure_ascii=False, indent=2)
