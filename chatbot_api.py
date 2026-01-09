@@ -428,11 +428,11 @@ class ChatwootService:
             best_global_idx = indices_in_intent[best_sub_idx]
             similarity_score = float(sims[best_sub_idx])
 
-            if similarity_score >= 0.65:
+            if similarity_score >= 0.5:
                 # Trường hợp 1: Rất giống câu mẫu -> Trả về câu trả lời mẫu chính xác
                 best_global_idx = indices_in_intent[best_sub_idx]
                 response = knowledge_data['responses'][best_global_idx]
-            elif 0.4 <= similarity_score < 0.65:
+            elif 0.4 <= similarity_score < 0.5:
                 # Trường hợp 2: Có vẻ giống nhưng không chắc chắn
                 # Thay vì lấy bừa, ta đưa ra câu trả lời mang tính định hướng
                 response = f"It seems you are asking about '{intent.replace('_', ' ')}'. Could you please be more specific so I can assist you better?"
